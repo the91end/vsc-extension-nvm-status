@@ -3,7 +3,7 @@
   "displayName": "NVM Status Switch",
   "description": "Automatically detects and switches Node.js versions",
   "version": "1.1.0",
-  "publisher": "OwenLobatoV",
+  "publisher": "the91end",
   "author": {
     "name": "OwenLobato"
   },
@@ -18,7 +18,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/OwenLobato/vsc-extension-nvm-status.git"
+    "url": "https://github.com/the91end/vsc-extension-nvm-status.git"
   },
   "license": "MIT",
   "engines": {

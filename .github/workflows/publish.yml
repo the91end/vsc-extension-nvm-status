@@ -1,0 +1,111 @@
+name: Publish Extension
+
+# Publishes the extension to extension registries.
+#
+# Triggers:
+#   - Publishing a GitHub Release (recommended flow: tag + release notes).
+#   - Manual run from the Actions tab (workflow_dispatch).
+#
+# The two registries publish independently: each job skips itself when its
+# token secret is not configured, so you can enable one before the other.
+#
+# Secrets:
+#   - OVSX_PAT:  an Open VSX access token (open-vsx.org > Settings > Access
+#     Tokens). Requires signing the Open VSX Publisher Agreement once, and a
+#     namespace matching the "publisher" in package.json.
+#   - VSCE_PAT:  an Azure DevOps Personal Access Token with the
+#     Marketplace > Manage scope, for the publisher in package.json.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      vsix: ${{ steps.package.outputs.vsix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Package VSIX
+        id: package
+        run: |
+          npx --yes @vscode/vsce package --out extension.vsix
+          echo "vsix=extension.vsix" >> "$GITHUB_OUTPUT"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: extension.vsix
+
+  publish-open-vsx:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for OVSX_PAT
+        id: guard
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -n "$OVSX_PAT" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "OVSX_PAT not set - skipping Open VSX publish."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download VSIX artifact
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix
+
+      - name: Publish to Open VSX
+        if: steps.guard.outputs.enabled == 'true'
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx --yes ovsx publish extension.vsix -p "$OVSX_PAT"
+
+  publish-vscode-marketplace:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for VSCE_PAT
+        id: guard
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -n "$VSCE_PAT" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "VSCE_PAT not set - skipping VS Code Marketplace publish."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download VSIX artifact
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix
+
+      - name: Publish to VS Code Marketplace
+        if: steps.guard.outputs.enabled == 'true'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx --yes @vscode/vsce publish --packagePath extension.vsix -p "$VSCE_PAT"
