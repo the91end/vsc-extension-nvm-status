@@ -76,6 +76,13 @@ jobs:
         with:
           name: vsix
 
+      - name: Ensure Open VSX namespace exists
+        if: steps.guard.outputs.enabled == 'true'
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        # Idempotent: create-namespace errors if it already exists, which is fine.
+        run: npx --yes ovsx create-namespace the91end -p "$OVSX_PAT" || true
+
       - name: Publish to Open VSX
         if: steps.guard.outputs.enabled == 'true'
         env:
