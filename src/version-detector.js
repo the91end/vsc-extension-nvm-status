@@ -10,6 +10,31 @@ function setActiveVersion(version) {
   activeVersionOverride = version;
 }
 
+// Returns the directory that contains the installed Node version folders.
+// - Linux/macOS (nvm-sh/nvm): ~/.nvm/versions/node
+// - Windows (coreybutler/nvm-windows): %NVM_HOME% (falls back to %NVM_DIR%)
+function getNvmVersionsRoot() {
+  if (process.platform === 'win32') {
+    return process.env.NVM_HOME || process.env.NVM_DIR || null;
+  }
+  return path.join(os.homedir(), '.nvm', 'versions', 'node');
+}
+
+// Returns the directory to prepend to PATH so the given version's node
+// binary is picked up.
+// - Linux/macOS: the version folder has a `bin` subdirectory.
+// - Windows: node.exe lives directly inside the version folder.
+function getNodeBinPath(version) {
+  const root = getNvmVersionsRoot();
+  if (!root) {
+    return null;
+  }
+  if (process.platform === 'win32') {
+    return path.join(root, `v${version}`);
+  }
+  return path.join(root, `v${version}`, 'bin');
+}
+
 function getExpectedVersion(rootPath) {
   // Search option 1) .nvmrc
   const nvmrcPath = path.join(rootPath, '.nvmrc');
@@ -54,8 +79,8 @@ function getCurrentVersion() {
 
 function getInstalledNodeVersions() {
   try {
-    const nvmVersionsPath = path.join(os.homedir(), '.nvm', 'versions', 'node');
-    if (fs.existsSync(nvmVersionsPath)) {
+    const nvmVersionsPath = getNvmVersionsRoot();
+    if (nvmVersionsPath && fs.existsSync(nvmVersionsPath)) {
       const versions = fs
         .readdirSync(nvmVersionsPath)
         .filter((dir) => dir.startsWith('v'))
@@ -75,5 +100,7 @@ module.exports = {
   getExpectedVersion,
   getCurrentVersion,
   getInstalledNodeVersions,
+  getNvmVersionsRoot,
+  getNodeBinPath,
   setActiveVersion,
 };

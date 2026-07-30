@@ -3,8 +3,8 @@
 All notable changes to the "nvm-status-switch" extension will be documented in this file.
 
 ## [Unreleased]
-
-- Initial release
+### Added
+- **Windows support:** Detects Node versions installed via `nvm-windows` by reading the `NVM_HOME` environment variable (falling back to `NVM_DIR`), instead of assuming the Unix `~/.nvm/versions/node` layout. `PATH` updates now use the correct per-platform version directory (no `bin` subfolder on Windows).
 
 ## [1.1.0] - 2026-04-07
 ### Added

@@ -19,8 +19,8 @@ When you switch versions, the extension updates VS Code's environment API (`PATH
 
 ## Requirements
 
-* **macOS / Linux**: `nvm` must be installed and available in your environment (`~/.zshrc` or `~/.bashrc`).
-* **Windows**: `nvm-windows` must be on your `PATH`.
+* **macOS / Linux**: `nvm` must be installed and available in your environment (`~/.zshrc` or `~/.bashrc`). Versions are read from `~/.nvm/versions/node`.
+* **Windows**: [`nvm-windows`](https://github.com/coreybutler/nvm-windows) must be installed. Its installer sets the `NVM_HOME` environment variable, which the extension uses to locate installed versions.
 * **VS Code**: ^1.110.0 or newer. A folder opened as a workspace is recommended.
 
 ## Quick Start
