@@ -1,10 +1,10 @@
 const vscode = require('vscode');
 const path = require('path');
-const os = require('os');
 const {
   getInstalledNodeVersions,
   getCurrentVersion,
   getExpectedVersion,
+  getNodeBinPath,
   setActiveVersion,
 } = require('./version-detector');
 
@@ -74,18 +74,13 @@ async function showVersionPicker() {
     const selectedVersion = selection.versionNumber;
 
     if (extensionContext) {
-      const nvmBinPath = path.join(
-        os.homedir(),
-        '.nvm',
-        'versions',
-        'node',
-        `v${selectedVersion}`,
-        'bin',
-      );
-      extensionContext.environmentVariableCollection.prepend(
-        'PATH',
-        `${nvmBinPath}${path.delimiter}`,
-      );
+      const nvmBinPath = getNodeBinPath(selectedVersion);
+      if (nvmBinPath) {
+        extensionContext.environmentVariableCollection.prepend(
+          'PATH',
+          `${nvmBinPath}${path.delimiter}`,
+        );
+      }
 
       // Update live terminals
       vscode.window.terminals.forEach((terminal) => {
@@ -104,18 +99,13 @@ async function showVersionPicker() {
 
 function applyVersionDirectly(versionNumber) {
   if (extensionContext) {
-    const nvmBinPath = path.join(
-      os.homedir(),
-      '.nvm',
-      'versions',
-      'node',
-      `v${versionNumber}`,
-      'bin',
-    );
-    extensionContext.environmentVariableCollection.prepend(
-      'PATH',
-      `${nvmBinPath}${path.delimiter}`,
-    );
+    const nvmBinPath = getNodeBinPath(versionNumber);
+    if (nvmBinPath) {
+      extensionContext.environmentVariableCollection.prepend(
+        'PATH',
+        `${nvmBinPath}${path.delimiter}`,
+      );
+    }
 
     vscode.window.terminals.forEach((terminal) => {
       terminal.sendText(`nvm use ${versionNumber}`);
