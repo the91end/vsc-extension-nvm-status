@@ -9,6 +9,9 @@ A powerful Visual Studio Code extension to switch and install Node.js from the s
 * **Quick Pick**: Click the Status Bar item to open a version picker showing installed versions.
 * **Project Mismatch Warning**: If your active Node version doesn't match the project's `.nvmrc` or `package.json`, the status bar changes color to warn you.
 
+### 🔄 Automatic Version Switching
+When you open a project, the extension automatically switches to its expected Node version (from `.nvmrc` or `package.json`) if that version is installed and not already active. If the expected version isn't installed, it falls back to the mismatch warning so you can install or pick another. Disable this with the `nvmStatusSwitch.autoSwitch` setting.
+
 ### 📁 Project Declaration Scan
 NodeSwitcher determines a "project" Node expectation by consulting sources in order:
 1. `.nvmrc`
