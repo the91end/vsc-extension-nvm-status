@@ -5,6 +5,8 @@ const {
   getCurrentVersion,
   getExpectedVersion,
   getNodeBinPath,
+  versionSatisfies,
+  resolveInstalledVersion,
   setActiveVersion,
 } = require('./version-detector');
 
@@ -12,6 +14,77 @@ let extensionContext;
 
 function setPickerContext(context) {
   extensionContext = context;
+}
+
+// Shared routine that activates a Node version: updates the PATH for future
+// terminals, runs `nvm use` in existing ones, records the active version and
+// refreshes the UI. Returns false when there is no extension context.
+function activateVersion(version, { notify = true, message } = {}) {
+  if (!extensionContext) {
+    return false;
+  }
+
+  const nvmBinPath = getNodeBinPath(version);
+  if (nvmBinPath) {
+    // Clear first so repeated switches don't stack multiple nvm bin
+    // directories onto PATH.
+    extensionContext.environmentVariableCollection.clear();
+    extensionContext.environmentVariableCollection.prepend(
+      'PATH',
+      `${nvmBinPath}${path.delimiter}`,
+    );
+  }
+
+  // Update live terminals
+  vscode.window.terminals.forEach((terminal) => {
+    terminal.sendText(`nvm use ${version}`);
+  });
+
+  setActiveVersion(version);
+  vscode.commands.executeCommand('nvm-status-switch.refreshUI');
+
+  if (notify) {
+    vscode.window.showInformationMessage(
+      message || `Node v${version} activated.`,
+    );
+  }
+
+  return true;
+}
+
+// Automatically switches to the project's expected Node version when it is
+// installed and not already active. Silently does nothing when auto-switch is
+// disabled, no version is expected, the current version already satisfies it,
+// or the expected version is not installed (the status bar surfaces that case).
+function autoSwitchToExpected() {
+  const config = vscode.workspace.getConfiguration('nvmStatusSwitch');
+  if (!config.get('autoSwitch', true)) {
+    return;
+  }
+
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders || folders.length === 0) {
+    return;
+  }
+
+  const expected = getExpectedVersion(folders[0].uri.fsPath);
+  if (!expected) {
+    return;
+  }
+
+  const current = getCurrentVersion();
+  if (versionSatisfies(current, expected)) {
+    return;
+  }
+
+  const target = resolveInstalledVersion(expected, getInstalledNodeVersions());
+  if (!target || target === current) {
+    return;
+  }
+
+  activateVersion(target, {
+    message: `Auto-switched to Node v${target} (project expects v${expected}).`,
+  });
 }
 
 async function showVersionPicker() {
@@ -71,59 +144,19 @@ async function showVersionPicker() {
   });
 
   if (selection) {
-    const selectedVersion = selection.versionNumber;
-
-    if (extensionContext) {
-      const nvmBinPath = getNodeBinPath(selectedVersion);
-      if (nvmBinPath) {
-        extensionContext.environmentVariableCollection.prepend(
-          'PATH',
-          `${nvmBinPath}${path.delimiter}`,
-        );
-      }
-
-      // Update live terminals
-      vscode.window.terminals.forEach((terminal) => {
-        terminal.sendText(`nvm use ${selectedVersion}`);
-      });
-
-      setActiveVersion(selectedVersion);
-      vscode.commands.executeCommand('nvm-status-switch.refreshUI');
-
-      vscode.window.showInformationMessage(
-        `Node v${selectedVersion} activated.`,
-      );
-    }
+    activateVersion(selection.versionNumber);
   }
 }
 
 function applyVersionDirectly(versionNumber) {
-  if (extensionContext) {
-    const nvmBinPath = getNodeBinPath(versionNumber);
-    if (nvmBinPath) {
-      extensionContext.environmentVariableCollection.prepend(
-        'PATH',
-        `${nvmBinPath}${path.delimiter}`,
-      );
-    }
-
-    vscode.window.terminals.forEach((terminal) => {
-      terminal.sendText(`nvm use ${versionNumber}`);
-    });
-
-    setActiveVersion(versionNumber);
-
-    // Refresh the entire UI (Status bar and Sidebar)
-    vscode.commands.executeCommand('nvm-status-switch.refreshUI');
-
-    vscode.window.showInformationMessage(
-      `Node v${versionNumber} activated from Sidebar.`,
-    );
-  }
+  activateVersion(versionNumber, {
+    message: `Node v${versionNumber} activated from Sidebar.`,
+  });
 }
 
 module.exports = {
   showVersionPicker,
   setPickerContext,
   applyVersionDirectly,
+  autoSwitchToExpected,
 };

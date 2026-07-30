@@ -2,7 +2,7 @@
   "name": "nvm-status-switch",
   "displayName": "NVM Status Switch",
   "description": "Automatically detects and switches Node.js versions",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "the91end",
   "author": {
     "name": "OwenLobato"
@@ -70,6 +70,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show or hide the status bar entry."
+        },
+        "nvmStatusSwitch.autoSwitch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically switch to the project's expected Node version (from .nvmrc or package.json) when it is installed and not already active."
         }
       }
     }

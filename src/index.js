@@ -4,6 +4,7 @@ const {
   showVersionPicker,
   setPickerContext,
   applyVersionDirectly,
+  autoSwitchToExpected,
 } = require('./picker');
 const { NodeVersionsProvider } = require('./sidebar');
 
@@ -77,12 +78,14 @@ function activate(context) {
 
     context.subscriptions.push(
       vscode.workspace.onDidChangeWorkspaceFolders(() => {
+        autoSwitchToExpected();
         updateStatusBar();
         if (nodeVersionsProvider) nodeVersionsProvider.refresh();
       }),
     );
 
     // Initial activation
+    autoSwitchToExpected();
     updateStatusBar();
 
     console.log('✅ NVM Status Switch: Activation completed successfully.');

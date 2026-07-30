@@ -77,6 +77,30 @@ function getCurrentVersion() {
   }
 }
 
+// True when the currently active version already satisfies the expected one.
+// `expected` may be partial (e.g. "18" or "18.16"); a match requires either an
+// exact equality or a match on a version-part boundary so "2" does not match
+// "20".
+function versionSatisfies(current, expected) {
+  if (!current || !expected) {
+    return false;
+  }
+  return current === expected || current.startsWith(`${expected}.`);
+}
+
+// Resolves a (possibly partial) expected version to a concrete installed
+// version. `installedVersions` is expected to be sorted newest-first, so the
+// highest matching version wins (e.g. expected "18" -> "18.16.0").
+function resolveInstalledVersion(expected, installedVersions) {
+  if (!expected || !installedVersions || installedVersions.length === 0) {
+    return null;
+  }
+  const matches = installedVersions.filter((v) =>
+    versionSatisfies(v, expected),
+  );
+  return matches.length > 0 ? matches[0] : null;
+}
+
 function getInstalledNodeVersions() {
   try {
     const nvmVersionsPath = getNvmVersionsRoot();
@@ -102,5 +126,7 @@ module.exports = {
   getInstalledNodeVersions,
   getNvmVersionsRoot,
   getNodeBinPath,
+  versionSatisfies,
+  resolveInstalledVersion,
   setActiveVersion,
 };
