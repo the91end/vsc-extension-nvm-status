@@ -18,7 +18,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/OwenLobato/vsc-extension-nvm-status.git"
+    "url": "https://github.com/the91end/vsc-extension-nvm-status.git"
   },
   "license": "MIT",
   "engines": {
